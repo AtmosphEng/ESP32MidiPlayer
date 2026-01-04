@@ -9,7 +9,7 @@
 
 #define BITS_PER_BYTE 8
 
-#define MIDI_MSG_BYTE_NOTE_OFF            0x80 // 
+#define MIDI_MSG_BYTE_NOTE_OFF            0x80
 #define MIDI_MSG_BYTE_NOTE_ON             0x90
 #define MIDI_MSG_STATUS_CONTROL_CHANGE    0xb0
 #define MIDI_MSG_STATUS_PROGRAM_CHANGE    0xc0
@@ -28,8 +28,12 @@
 #define SERIAL_MIDI_STREAM_OUT
 #define MIDI_CHANNEL_SPECIFIC // allow channel (0-15) specification in the msg, otherwise its all notes on channel 0.
 
+// Choose serial port for midi stream to seeed midi synth.
 #ifdef TARGET_XIAO_SAMD21
 #define SERIAL_MIDI Serial1 //  for xiao samd21
+#elif defined(TARGET_ESP32_CYD)
+#define SERIAL_MIDI Serial // for TCMENU to allow use of CYD with rotary encoder. Free-up Serial2 hw pins for encoder.
+//#define SERIAL_MIDI Serial2
 #else
 #define SERIAL_MIDI Serial2
 #endif
@@ -37,6 +41,12 @@
 #define MUTED_CHANNEL_A 9 // equivalent as '10' for 1-16. Drum channel.
 
 // INCLUDE ****************************************************************************************
+
+#if 0 // if 1 then PRESERVE serial dubug prints to a chosen port, else serial debug prints are REMOVED.
+#define MYDEBUGON
+#define MYDEBUGSERIALCHAN Serial
+#endif
+#include "D:\SBOX\WORK\aaaPROJ\libraries\MyShared\src\myDebugPrint.h"
 
 #ifdef FS_LITTLEFS 
 
@@ -103,7 +113,7 @@ void handleLog(MidiLogLevel level, const char* message) {
       break;
   }
   // Print the prefix and the message, followed by a newline
-  Serial.printf("%s%s\n", levelStr, message);
+  MYDEBUGPRINT_F_3("%s%s\n", levelStr, message);
 }
 
 
@@ -112,7 +122,7 @@ void handleNoteOn(uint8_t channel, uint8_t note, uint8_t velocity) {
   if(channel != MUTED_CHANNEL_A){ // specify channel to be muted.
 
 #ifdef DEBUG_SERIAL_OUT
-    Serial.printf("[EVT] Note On:  Ch=%u Note=%u Vel=%u (Tick: %lu)\n",
+    MYDEBUGPRINT_F_5("[EVT] Note On:  Ch=%u Note=%u Vel=%u (Tick: %lu)\n",
     channel + 1, note, velocity, midiPlayer.getCurrentTick()); // Display channel 1-16
 #endif // DEBUG_SERIAL_OUT
 
@@ -136,7 +146,7 @@ void handleNoteOff(uint8_t channel, uint8_t note, uint8_t velocity) {
   if(channel != MUTED_CHANNEL_A){ // specify channel to be muted
 
 #ifdef DEBUG_SERIAL_OUT
-    Serial.printf("[EVT] Note Off: Ch=%u Note=%u Vel=%u (Tick: %lu)\n",
+    MYDEBUGPRINT_F_5("[EVT] Note Off: Ch=%u Note=%u Vel=%u (Tick: %lu)\n",
     channel + 1, note, velocity, midiPlayer.getCurrentTick()); // Display channel 1-16
 #endif // DEBUG_SERIAL_OUT
 
@@ -160,7 +170,7 @@ void handleNoteOff(uint8_t channel, uint8_t note, uint8_t velocity) {
 void handleControlChange(uint8_t channel, uint8_t controller, uint8_t value) {
 
 #ifdef DEBUG_SERIAL_OUT
-Serial.printf("[EVT] Ctrl Chg: Ch=%u CC=%u Val=%u (Tick: %lu)\n",
+MYDEBUGPRINT_F_5("[EVT] Ctrl Chg: Ch=%u CC=%u Val=%u (Tick: %lu)\n",
 channel + 1, controller, value, midiPlayer.getCurrentTick()); // Display channel 1-16
 #endif // DEBUG_SERIAL_OUT
 
@@ -182,7 +192,7 @@ SERIAL_MIDI.write(value); // data byte 2
 void handleProgramChange(uint8_t channel, uint8_t program) {
 
 #ifdef DEBUG_SERIAL_OUT
-Serial.printf("[EVT] Prog Chg: Ch=%u Prog=%u (Tick: %lu)\n",
+MYDEBUGPRINT_F_4("[EVT] Prog Chg: Ch=%u Prog=%u (Tick: %lu)\n",
 channel + 1, program, midiPlayer.getCurrentTick()); // Display channel 1-16
 #endif // DEBUG_SERIAL_OUT
 
@@ -203,7 +213,7 @@ SERIAL_MIDI.write(program); // data byte 1
 void handlePitchBend(uint8_t channel, int16_t value) {
 
 #ifdef DEBUG_SERIAL_OUT
-Serial.printf("[EVT] Pitch Bnd: Ch=%u Val=%d (Tick: %lu)\n",
+MYDEBUGPRINT_F_4("[EVT] Pitch Bnd: Ch=%u Val=%d (Tick: %lu)\n",
 channel + 1, value, midiPlayer.getCurrentTick()); // Display channel 1-16
 #endif // DEBUG_SERIAL_OUT
 
@@ -226,7 +236,7 @@ void handleTempoChange(uint32_t microsecondsPerQuarterNote) {
 
 #ifdef DEBUG_SERIAL_OUT
 float bpm = 60000000.0f / microsecondsPerQuarterNote;
-Serial.printf("[EVT] Tempo Chg: %lu us/qn (%.2f BPM) (Tick: %lu)\n",
+MYDEBUGPRINT_F_4("[EVT] Tempo Chg: %lu us/qn (%.2f BPM) (Tick: %lu)\n",
 microsecondsPerQuarterNote, bpm, midiPlayer.getCurrentTick());
 #endif // DEBUG_SERIAL_OUT
 
@@ -235,7 +245,7 @@ microsecondsPerQuarterNote, bpm, midiPlayer.getCurrentTick());
 void handleTimeSignature(uint8_t num, uint8_t den_pow2, uint8_t clocks, uint8_t b) {
 
 #ifdef DEBUG_SERIAL_OUT
-Serial.printf("[EVT] Time Sig: %u/%u Clocks=%u 32nds/QN=%u (Tick: %lu)\n",
+MYDEBUGPRINT_F_6("[EVT] Time Sig: %u/%u Clocks=%u 32nds/QN=%u (Tick: %lu)\n",
 num, (1 << den_pow2), clocks, b, midiPlayer.getCurrentTick());
 #endif // DEBUG_SERIAL_OUT
 
@@ -244,7 +254,7 @@ num, (1 << den_pow2), clocks, b, midiPlayer.getCurrentTick());
 void handleEndOfTrack(uint8_t trackIndex) {
 
 #ifdef DEBUG_SERIAL_OUT
-Serial.printf("[INF] EndOfTrack reached for track %u (Tick: %lu)\n",
+MYDEBUGPRINT_F_3("[INF] EndOfTrack reached for track %u (Tick: %lu)\n",
 trackIndex, midiPlayer.getCurrentTick());
 #endif // DEBUG_SERIAL_OUT
 
@@ -253,38 +263,38 @@ trackIndex, midiPlayer.getCurrentTick());
 void handlePlaybackComplete() {
 
 #ifdef DEBUG_SERIAL_OUT
-Serial.println("\n[INF] === Playback Finished ===\n");
+MYDEBUGPRINTLN("\n[INF] === Playback Finished ===\n");
 #endif // DEBUG_SERIAL_OUT
 
 } // handlePlaybackComplete
 
 
 void listDir(fs::FS &fs, const char *dirname, uint8_t levels) {
-  Serial.printf("Listing directory: %s\n", dirname);
+  MYDEBUGPRINT_F_2("Listing directory: %s\n", dirname);
 
   File root = fs.open(dirname);
   if (!root) {
-    Serial.println("Failed to open directory");
+    MYDEBUGPRINTLN("Failed to open directory");
     return;
   }
   if (!root.isDirectory()) {
-    Serial.println("Not a directory");
+    MYDEBUGPRINTLN("Not a directory");
     return;
   }
 
   File file = root.openNextFile();
   while (file) {
     if (file.isDirectory()) {
-      Serial.print("  DIR : ");
-      Serial.println(file.name());
+      MYDEBUGPRINT("  DIR : ");
+      MYDEBUGPRINTLN(file.name());
       if (levels) { // Recursively list subdirectories if levels > 0
         listDir(fs, file.name(), levels - 1);
       }
     } else {
-      Serial.print("  FILE: ");
-      Serial.print(file.name());
-      Serial.print("  SIZE: ");
-      Serial.println(file.size());
+      MYDEBUGPRINT("  FILE: ");
+      MYDEBUGPRINT(file.name());
+      MYDEBUGPRINT("  SIZE: ");
+      MYDEBUGPRINTLN(file.size());
     }
     file = root.openNextFile();
   }
@@ -292,7 +302,8 @@ void listDir(fs::FS &fs, const char *dirname, uint8_t levels) {
 
 
 void setup() {
-  Serial.begin(115200);
+  //Serial.begin(115200);
+  Serial.begin(31250);
 
   //  while (!Serial) delay(10);
 
@@ -318,7 +329,7 @@ void setup() {
 //  delay(1000);
   delay(2000); //  allow extra time for Windows to register the COM port
 
-  Serial.println("Initializing MIDI Player...");
+  MYDEBUGPRINTLN("Initializing MIDI Player...");
 
   Serial.flush(); 
   delay(1000); 
@@ -341,7 +352,7 @@ void setup() {
 
 #ifdef FS_LITTLEFS // 
   if (!LittleFS.exists(MIDI_FILE)) {
-    Serial.printf("MIDI file %s not found in LittleFS!\n", MIDI_FILE);
+    MYDEBUGPRINT_F_2("MIDI file %s not found in LittleFS!\n", MIDI_FILE);
     //  while (true) delay(1000);
   }
 
@@ -349,7 +360,7 @@ void setup() {
   // Initialize SD card
 
   if (!SD.begin(SD_CS)) { // SD_CS is the Chip Select pin for your SD card module
-    Serial.println("SD Card Mount Failed");
+    MYDEBUGPRINTLN("SD Card Mount Failed");
     return;
   }
   else{
@@ -360,24 +371,25 @@ void setup() {
 #endif //  FS
 
   if (!midiPlayer.load(MIDI_FILE)) {
-    Serial.printf("Failed to load MIDI file %s\n", MIDI_FILE);
+    MYDEBUGPRINT_F_2("Failed to load MIDI file %s\n", MIDI_FILE);
     while (true) delay(1000);
   }
   else{
-      Serial.printf("Successful load MIDI file %s\n", MIDI_FILE);
+      MYDEBUGPRINT_F_2("Successful load MIDI file %s\n", MIDI_FILE);
   }
 
-  Serial.println("MIDI Player ready. Commands: play, pause, resume, stop");
+  MYDEBUGPRINTLN("MIDI Player ready. Commands: play, pause, resume, stop");
 
   // Serial2.println("play"); //  automatically play the current file ?
   midiPlayer.play();
-  Serial.println("Playback started");
+  MYDEBUGPRINTLN("Playback started");
 
 } // setup  comment added
 
 void handleSerialCommands() {
+#if 0 // aaaFIXME
   if (Serial.available() > 0) {
-    String command = Serial.readStringUntil('\n');
+    // aaaFIXME String command = Serial.readStringUntil('\n');
     command.trim();
     
     PlaybackState state = midiPlayer.getState();
@@ -385,36 +397,37 @@ void handleSerialCommands() {
     if (command.equalsIgnoreCase("play")) {
       if (state != PlaybackState::PLAYING) {
         midiPlayer.play();
-        Serial.println("Playback started");
+        MYDEBUGPRINTLN("Playback started");
       } else {
-        Serial.println("Already playing");
+        MYDEBUGPRINTLN("Already playing");
       }
     }
     else if (command.equalsIgnoreCase("pause")) {
       if (state == PlaybackState::PLAYING) {
         midiPlayer.pause();
-        Serial.println("Playback paused");
+        MYDEBUGPRINTLN("Playback paused");
       } else {
-        Serial.println("Not playing - cannot pause");
+        MYDEBUGPRINTLN("Not playing - cannot pause");
       }
     }
     else if (command.equalsIgnoreCase("stop")) {
       if (state == PlaybackState::PLAYING || state == PlaybackState::PAUSED) {
         midiPlayer.stop();
-        Serial.println("Playback stopped");
+        MYDEBUGPRINTLN("Playback stopped");
       } else {
-        Serial.println("Already stopped");
+        MYDEBUGPRINTLN("Already stopped");
       }
     }
     else {
-      Serial.println("Unknown command. Use: play, pause, resume, stop");
+      MYDEBUGPRINTLN("Unknown command. Use: play, pause, resume, stop");
     }
   }
-}
+#endif 
+} // MYDEBUGPRINT_F_5
 
 void loop() {
   midiPlayer.tick(); // Process MIDI events
-  handleSerialCommands(); // Handle serial input
-}
+  // aaaFIME handleSerialCommands(); // Handle serial input
+} // handleSerialCommands
 
 // END_OF_FILE

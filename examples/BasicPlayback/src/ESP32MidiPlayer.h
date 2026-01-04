@@ -3,7 +3,14 @@
 
 #include <Arduino.h>
 
+//#if 1
+#if defined(TARGET_XIAO_SAMD21) 
+#include <SPI.h> //  for Seeed Xiao samd21
+// #include <SD.h> 
+#include <Seeed_Arduino_FS.h> 
+#else
 #include <FS.h>
+#endif
 
 #include <vector>
 #include <cstdarg> // For va_list
